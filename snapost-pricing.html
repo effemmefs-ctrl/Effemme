@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snapost — Planos e Preços</title>
+<script src="https://js.stripe.com/v3/"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #07070B;
+  --s1:       #0F0F15;
+  --s2:       #17171F;
+  --s3:       #1F1F29;
+  --border:   rgba(255,255,255,0.055);
+  --border2:  rgba(255,255,255,0.10);
+  --border3:  rgba(255,255,255,0.16);
+  --text:     #F0ECF8;
+  --text2:    #A89FC0;
+  --muted:    #5A5470;
+  --accent:   #FF4D1C;
+  --accent2:  #FF7A45;
+  --glow:     rgba(255,77,28,0.20);
+  --green:    #00E0A0;
+  --green-bg: rgba(0,224,160,0.06);
+  --yellow:   #FFB800;
+}
+
+*,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+
+body {
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ── GRAIN ── */
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  pointer-events:none; z-index:0;
+}
+
+/* ── NAV ── */
+nav {
+  position:sticky; top:0; z-index:100;
+  background:rgba(7,7,11,0.88);
+  backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);
+  padding:0 40px;
+  height:60px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+
+.nav-logo {
+  font-family:'Syne',sans-serif;
+  font-weight:800; font-size:1.2rem;
+  letter-spacing:-0.5px;
+  text-decoration:none; color:var(--text);
+}
+.nav-logo em { font-style:normal; color:var(--accent); }
+
+.nav-right { display:flex; align-items:center; gap:12px; }
+
+.btn-nav {
+  background:none; border:1px solid var(--border2);
+  border-radius:100px; padding:8px 20px;
+  font-family:'DM Sans',sans-serif; font-size:0.83rem;
+  color:var(--text2); cursor:pointer; transition:all 0.2s;
+}
+.btn-nav:hover { border-color:var(--border3); color:var(--text); }
+
+.btn-nav-accent {
+  background:var(--accent); border:none;
+  border-radius:100px; padding:8px 20px;
+  font-family:'DM Sans',sans-serif; font-size:0.83rem;
+  color:white; cursor:pointer; transition:all 0.2s;
+  box-shadow:0 4px 16px var(--glow);
+}
+.btn-nav-accent:hover { transform:translateY(-1px); }
+
+/* ── HERO ── */
+.hero {
+  text-align:center;
+  padding:90px 40px 60px;
+  position:relative; z-index:1;
+}
+
+.hero-badge {
+  display:inline-flex; align-items:center; gap:7px;
+  background:rgba(255,77,28,0.08);
+  border:1px solid rgba(255,77,28,0.18);
+  border-radius:100px; padding:5px 16px;
+  font-size:0.72rem; font-weight:500;
+  color:var(--accent); letter-spacing:1px;
+  text-transform:uppercase; margin-bottom:24px;
+}
+.badge-dot {
+  width:6px; height:6px;
+  background:var(--accent); border-radius:50%;
+  animation:blink 2s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.hero h1 {
+  font-family:'Syne',sans-serif;
+  font-size:clamp(2.4rem,5vw,4rem);
+  font-weight:800; letter-spacing:-2px;
+  line-height:1.05; margin-bottom:20px;
+}
+.hero h1 em {
+  font-style:normal; color:var(--accent);
+}
+
+.hero p {
+  font-size:1.05rem; color:var(--text2);
+  max-width:480px; margin:0 auto 40px;
+  line-height:1.75;
+}
+
+/* Toggle billing */
+.billing-toggle {
+  display:inline-flex; align-items:center; gap:12px;
+  background:var(--s2); border:1px solid var(--border2);
+  border-radius:100px; padding:5px;
+  margin-bottom:60px;
+}
+.toggle-opt {
+  padding:8px 20px; border-radius:100px;
+  font-size:0.82rem; cursor:pointer;
+  transition:all 0.2s; color:var(--text2);
+  font-weight:500;
+}
+.toggle-opt.on {
+  background:var(--accent); color:white;
+  box-shadow:0 4px 12px var(--glow);
+}
+.save-badge {
+  background:rgba(0,224,160,0.12);
+  color:var(--green);
+  border:1px solid rgba(0,224,160,0.2);
+  padding:2px 9px; border-radius:100px;
+  font-size:0.65rem; font-weight:600;
+  margin-left:-4px;
+}
+
+/* ── PRICING GRID ── */
+.pricing-wrap {
+  max-width:1080px; margin:0 auto;
+  padding:0 24px 100px;
+  position:relative; z-index:1;
+}
+
+.pricing-grid {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:0;
+  border:1px solid var(--border2);
+  border-radius:24px;
+  overflow:hidden;
+}
+
+.plan-card {
+  background:var(--s1);
+  padding:40px 32px;
+  position:relative;
+  transition:background 0.3s;
+  border-right:1px solid var(--border);
+}
+.plan-card:last-child { border-right:none; }
+.plan-card:hover { background:var(--s2); }
+
+.plan-card.featured {
+  background:var(--accent);
+  border-right-color:rgba(255,255,255,0.15);
+}
+.plan-card.featured:hover { background:var(--accent2); }
+
+.popular-badge {
+  position:absolute; top:20px; right:20px;
+  background:rgba(255,255,255,0.2);
+  color:white; font-size:0.62rem; font-weight:700;
+  padding:3px 10px; border-radius:100px;
+  letter-spacing:1px; text-transform:uppercase;
+}
+
+.plan-name {
+  font-size:0.72rem; font-weight:600;
+  letter-spacing:2px; text-transform:uppercase;
+  color:var(--muted); margin-bottom:16px;
+}
+.plan-card.featured .plan-name { color:rgba(255,255,255,0.7); }
+
+.plan-price {
+  font-family:'Syne',sans-serif;
+  font-size:3.2rem; font-weight:800;
+  letter-spacing:-2px; line-height:1;
+  margin-bottom:4px;
+}
+.plan-price sub {
+  font-size:1.2rem; font-weight:600;
+  letter-spacing:0; vertical-align:super;
+}
+.plan-price sup {
+  font-size:1rem; letter-spacing:0;
+}
+
+.plan-period {
+  font-size:0.78rem; color:var(--text2);
+  margin-bottom:8px;
+}
+.plan-card.featured .plan-period { color:rgba(255,255,255,0.7); }
+
+.plan-savings {
+  font-size:0.72rem; color:var(--green);
+  margin-bottom:28px; font-weight:500;
+}
+.plan-card.featured .plan-savings { color:rgba(255,255,255,0.8); }
+
+.plan-divider {
+  height:1px; background:var(--border);
+  margin-bottom:24px;
+}
+.plan-card.featured .plan-divider { background:rgba(255,255,255,0.15); }
+
+.plan-features {
+  list-style:none;
+  display:flex; flex-direction:column; gap:11px;
+  margin-bottom:32px;
+}
+.plan-features li {
+  display:flex; align-items:flex-start; gap:10px;
+  font-size:0.86rem; color:var(--text2);
+  line-height:1.5;
+}
+.plan-card.featured .plan-features li { color:rgba(255,255,255,0.85); }
+
+.feat-check {
+  width:18px; height:18px; flex-shrink:0;
+  border-radius:50%;
+  background:rgba(0,224,160,0.1);
+  border:1px solid rgba(0,224,160,0.2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:0.6rem; color:var(--green);
+  margin-top:1px;
+}
+.plan-card.featured .feat-check {
+  background:rgba(255,255,255,0.2);
+  border-color:transparent; color:white;
+}
+
+.time-saved {
+  background:var(--green-bg);
+  border:1px solid rgba(0,224,160,0.15);
+  border-radius:10px; padding:10px 14px;
+  font-size:0.78rem; color:var(--green);
+  display:flex; align-items:center; gap:8px;
+  margin-bottom:20px;
+}
+.plan-card.featured .time-saved {
+  background:rgba(255,255,255,0.12);
+  border-color:rgba(255,255,255,0.2);
+  color:white;
+}
+
+/* CTA buttons */
+.plan-btn {
+  width:100%; padding:14px;
+  border-radius:12px;
+  font-family:'Syne',sans-serif;
+  font-weight:700; font-size:0.92rem;
+  cursor:pointer; transition:all 0.2s;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  position:relative; overflow:hidden;
+  letter-spacing:0.2px;
+}
+
+.btn-outline {
+  background:transparent;
+  border:1px solid var(--border2);
+  color:var(--text);
+}
+.btn-outline:hover { border-color:var(--border3); background:var(--s3); }
+
+.btn-white {
+  background:white; border:none;
+  color:var(--accent);
+  box-shadow:0 6px 24px rgba(0,0,0,0.2);
+}
+.btn-white:hover { transform:translateY(-1px); box-shadow:0 10px 32px rgba(0,0,0,0.25); }
+
+.btn-outline-white {
+  background:transparent;
+  border:1px solid rgba(255,255,255,0.3);
+  color:white;
+}
+.btn-outline-white:hover { background:rgba(255,255,255,0.1); }
+
+.plan-btn:disabled {
+  opacity:0.5; cursor:not-allowed; transform:none!important;
+}
+
+/* ── CHECKOUT MODAL ── */
+#checkoutOverlay {
+  display:none;
+  position:fixed; inset:0;
+  background:rgba(0,0,0,0.75);
+  backdrop-filter:blur(12px);
+  z-index:500;
+  align-items:center; justify-content:center;
+  padding:20px;
+}
+#checkoutOverlay.show { display:flex; }
+
+.checkout-box {
+  background:var(--s1);
+  border:1px solid var(--border2);
+  border-radius:24px;
+  width:100%; max-width:480px;
+  overflow:hidden;
+  animation:modal-in 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes modal-in {
+  from { opacity:0; transform:scale(0.92) translateY(16px); }
+  to   { opacity:1; transform:scale(1) translateY(0); }
+}
+
+.checkout-header {
+  padding:28px 28px 0;
+  display:flex; align-items:flex-start; justify-content:space-between;
+}
+.checkout-plan-badge {
+  display:inline-flex; align-items:center; gap:6px;
+  background:rgba(255,77,28,0.1);
+  border:1px solid rgba(255,77,28,0.2);
+  border-radius:100px; padding:4px 14px;
+  font-size:0.75rem; color:var(--accent); font-weight:600;
+  margin-bottom:16px;
+}
+.checkout-header h2 {
+  font-family:'Syne',sans-serif;
+  font-size:1.4rem; font-weight:800;
+  letter-spacing:-0.8px;
+}
+.checkout-close {
+  background:var(--s3); border:1px solid var(--border2);
+  border-radius:8px; width:32px; height:32px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; color:var(--text2); font-size:1rem;
+  transition:all 0.15s; flex-shrink:0;
+}
+.checkout-close:hover { color:var(--text); border-color:var(--border3); }
+
+.checkout-summary {
+  margin:20px 28px;
+  background:var(--s2); border:1px solid var(--border);
+  border-radius:14px; padding:16px;
+}
+.summary-row {
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:0.85rem;
+}
+.summary-row + .summary-row {
+  margin-top:8px; padding-top:8px;
+  border-top:1px solid var(--border);
+}
+.summary-label { color:var(--text2); }
+.summary-val { font-weight:500; }
+.summary-total .summary-label { color:var(--text); font-weight:600; }
+.summary-total .summary-val {
+  font-family:'Syne',sans-serif;
+  font-size:1.1rem; font-weight:800; color:var(--accent);
+}
+
+.checkout-form { padding:0 28px 28px; }
+
+.co-field { margin-bottom:14px; }
+.co-field label {
+  display:block; font-size:0.74rem; font-weight:600;
+  color:var(--text2); margin-bottom:7px; letter-spacing:0.2px;
+}
+.co-field input {
+  width:100%;
+  background:var(--s2); border:1.5px solid var(--border2);
+  border-radius:11px; padding:12px 14px;
+  color:var(--text); font-family:'DM Sans',sans-serif;
+  font-size:0.9rem; outline:none;
+  transition:border-color 0.2s, box-shadow 0.2s;
+}
+.co-field input:focus {
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--glow);
+}
+.co-field input::placeholder { color:var(--muted); }
+
+.co-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+#card-element {
+  background:var(--s2); border:1.5px solid var(--border2);
+  border-radius:11px; padding:13px 14px;
+  margin-bottom:14px;
+  transition:border-color 0.2s;
+}
+#card-element.StripeElement--focus {
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--glow);
+}
+
+#card-errors {
+  font-size:0.78rem; color:#ff6b8a;
+  margin-bottom:14px; min-height:20px;
+  display:flex; align-items:center; gap:6px;
+}
+
+.checkout-btn {
+  width:100%; padding:15px;
+  background:var(--accent); border:none;
+  border-radius:12px; color:white;
+  font-family:'Syne',sans-serif; font-weight:700;
+  font-size:1rem; cursor:pointer;
+  box-shadow:0 6px 28px var(--glow);
+  transition:all 0.2s;
+  display:flex; align-items:center; justify-content:center; gap:9px;
+}
+.checkout-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 10px 36px var(--glow); }
+.checkout-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+
+.checkout-footer {
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  font-size:0.72rem; color:var(--muted); margin-top:14px;
+}
+
+/* ── SUCCESS SCREEN ── */
+#successScreen {
+  display:none;
+  position:fixed; inset:0;
+  background:var(--bg);
+  z-index:600;
+  align-items:center; justify-content:center;
+  flex-direction:column; text-align:center;
+  padding:40px;
+}
+#successScreen.show { display:flex; animation:fade-in 0.5s ease; }
+@keyframes fade-in { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+.success-icon {
+  width:80px; height:80px;
+  background:var(--green-bg);
+  border:1px solid rgba(0,224,160,0.2);
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:2rem; margin-bottom:24px;
+}
+#successScreen h2 {
+  font-family:'Syne',sans-serif;
+  font-size:2rem; font-weight:800;
+  letter-spacing:-1px; margin-bottom:12px;
+  color:var(--green);
+}
+#successScreen p {
+  font-size:0.95rem; color:var(--text2);
+  max-width:400px; line-height:1.7; margin-bottom:32px;
+}
+.success-btn {
+  background:var(--accent); color:white;
+  border:none; border-radius:100px;
+  padding:14px 36px;
+  font-family:'Syne',sans-serif;
+  font-weight:700; font-size:1rem;
+  cursor:pointer; box-shadow:0 6px 28px var(--glow);
+  transition:all 0.2s;
+}
+.success-btn:hover { transform:translateY(-2px); }
+
+/* ── FAQ ── */
+.faq-section {
+  max-width:680px; margin:0 auto;
+  padding:0 24px 100px;
+  position:relative; z-index:1;
+}
+.faq-title {
+  font-family:'Syne',sans-serif;
+  font-size:1.6rem; font-weight:800;
+  letter-spacing:-1px; text-align:center;
+  margin-bottom:36px;
+}
+.faq-item {
+  border:1px solid var(--border);
+  border-radius:14px; margin-bottom:8px;
+  overflow:hidden;
+}
+.faq-q {
+  padding:16px 20px;
+  display:flex; align-items:center; justify-content:space-between;
+  cursor:pointer; font-size:0.9rem; font-weight:500;
+  transition:background 0.2s;
+}
+.faq-q:hover { background:var(--s2); }
+.faq-arrow { color:var(--muted); transition:transform 0.2s; font-size:1rem; }
+.faq-item.open .faq-arrow { transform:rotate(180deg); }
+.faq-a {
+  display:none; padding:0 20px 16px;
+  font-size:0.85rem; color:var(--text2); line-height:1.7;
+}
+.faq-item.open .faq-a { display:block; }
+
+/* ── SPINNER ── */
+@keyframes spin { to{transform:rotate(360deg)} }
+.spinner {
+  width:18px; height:18px;
+  border:2.5px solid rgba(255,255,255,0.2);
+  border-top-color:white; border-radius:50%;
+  animation:spin 0.55s linear infinite;
+  flex-shrink:0;
+}
+
+/* ── RESPONSIVE ── */
+@media(max-width:860px) {
+  .pricing-grid { grid-template-columns:1fr; }
+  .plan-card { border-right:none; border-bottom:1px solid var(--border); }
+  .plan-card:last-child { border-bottom:none; }
+}
+@media(max-width:480px) {
+  nav { padding:0 20px; }
+  .hero { padding:60px 20px 40px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">Snap<em>ost</em></a>
+  <div class="nav-right">
+    <button class="btn-nav" onclick="window.open('snapost-auth-v3.html')">Entrar</button>
+    <button class="btn-nav-accent" onclick="document.querySelector('.pricing-wrap').scrollIntoView({behavior:'smooth'})">Ver planos</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">
+    <div class="badge-dot"></div>
+    7 dias grátis em todos os planos
+  </div>
+  <h1>Simples assim.<br><em>Sem surpresas.</em></h1>
+  <p>Escolha o plano certo para você. Cancele quando quiser. Sem fidelidade, sem letras miúdas.</p>
+
+  <div class="billing-toggle">
+    <div class="toggle-opt on" id="togMonthly" onclick="setBilling('monthly')">Mensal</div>
+    <div class="toggle-opt" id="togAnnual" onclick="setBilling('annual')">
+      Anual <span class="save-badge">-20%</span>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<div class="pricing-wrap">
+  <div class="pricing-grid">
+
+    <!-- CRIADOR -->
+    <div class="plan-card">
+      <div class="plan-name">Criador</div>
+      <div class="plan-price"><sub>R$</sub><span id="price-criador">39</span></div>
+      <div class="plan-period">por mês · cobrado <span id="period-criador">mensalmente</span></div>
+      <div class="plan-savings" id="savings-criador">&nbsp;</div>
+      <div class="time-saved">⏱️ Economiza <strong>~30h/mês</strong></div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li><div class="feat-check">✓</div> 30 posts por mês</li>
+        <li><div class="feat-check">✓</div> 4 redes sociais</li>
+        <li><div class="feat-check">✓</div> Edição automática com IA</li>
+        <li><div class="feat-check">✓</div> Legenda + hashtags</li>
+        <li><div class="feat-check">✓</div> 1 perfil por rede</li>
+        <li><div class="feat-check">✓</div> Suporte por email</li>
+      </ul>
+      <button class="plan-btn btn-outline" onclick="openCheckout('criador')">
+        Começar grátis →
+      </button>
+    </div>
+
+    <!-- PROFISSIONAL -->
+    <div class="plan-card featured">
+      <div class="popular-badge">Mais popular</div>
+      <div class="plan-name">Profissional</div>
+      <div class="plan-price"><sub>R$</sub><span id="price-pro">89</span></div>
+      <div class="plan-period">por mês · cobrado <span id="period-pro">mensalmente</span></div>
+      <div class="plan-savings" id="savings-pro">&nbsp;</div>
+      <div class="time-saved">⏱️ Economiza <strong>~80h/mês</strong></div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li><div class="feat-check">✓</div> Posts ilimitados</li>
+        <li><div class="feat-check">✓</div> Todas as 8 redes sociais</li>
+        <li><div class="feat-check">✓</div> Agendamento inteligente</li>
+        <li><div class="feat-check">✓</div> Analytics completo</li>
+        <li><div class="feat-check">✓</div> 3 perfis incluídos</li>
+        <li><div class="feat-check">✓</div> Suporte prioritário</li>
+      </ul>
+      <button class="plan-btn btn-white" onclick="openCheckout('pro')">
+        Começar grátis →
+      </button>
+    </div>
+
+    <!-- AGÊNCIA -->
+    <div class="plan-card">
+      <div class="plan-name">Agência</div>
+      <div class="plan-price"><sub>R$</sub><span id="price-agencia">249</span></div>
+      <div class="plan-period">por mês · cobrado <span id="period-agencia">mensalmente</span></div>
+      <div class="plan-savings" id="savings-agencia">&nbsp;</div>
+      <div class="time-saved">⏱️ Economiza <strong>+300h/mês</strong></div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li><div class="feat-check">✓</div> Até 20 clientes/perfis</li>
+        <li><div class="feat-check">✓</div> Dashboard centralizado</li>
+        <li><div class="feat-check">✓</div> Relatórios para clientes</li>
+        <li><div class="feat-check">✓</div> White-label disponível</li>
+        <li><div class="feat-check">✓</div> API de acesso</li>
+        <li><div class="feat-check">✓</div> Suporte dedicado + SLA</li>
+      </ul>
+      <button class="plan-btn btn-outline" onclick="openCheckout('agencia')">
+        Falar com vendas →
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Guarantee row -->
+  <div style="display:flex;align-items:center;justify-content:center;gap:32px;margin-top:32px;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:8px;font-size:0.82rem;color:var(--muted);">
+      🔒 Pagamento 100% seguro
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:0.82rem;color:var(--muted);">
+      ↩️ Cancele quando quiser
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:0.82rem;color:var(--muted);">
+      🎁 7 dias grátis em todos
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:0.82rem;color:var(--muted);">
+      💳 Cartão, PIX ou boleto
+    </div>
+  </div>
+</div>
+
+<!-- FAQ -->
+<div class="faq-section">
+  <div class="faq-title">Perguntas frequentes</div>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">
+      Preciso de cartão de crédito para o período grátis?
+      <span class="faq-arrow">▼</span>
+    </div>
+    <div class="faq-a">Não. Os 7 dias grátis não exigem cartão. Você só informa os dados de pagamento quando decidir continuar após o período de teste.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">
+      Posso mudar de plano depois?
+      <span class="faq-arrow">▼</span>
+    </div>
+    <div class="faq-a">Sim, a qualquer momento. Upgrade é imediato e você paga apenas a diferença proporcional. Downgrade entra no próximo ciclo.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">
+      Como funciona o cancelamento?
+      <span class="faq-arrow">▼</span>
+    </div>
+    <div class="faq-a">Você pode cancelar a qualquer momento pelo painel. O acesso continua até o fim do período já pago. Sem multa, sem burocracia.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">
+      Quais formas de pagamento são aceitas?
+      <span class="faq-arrow">▼</span>
+    </div>
+    <div class="faq-a">Cartão de crédito (Visa, Mastercard, Amex), PIX e boleto bancário. Para plano Agência também aceitamos transferência e NF.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">
+      O que acontece com meus posts se cancelar?
+      <span class="faq-arrow">▼</span>
+    </div>
+    <div class="faq-a">Seu histórico fica salvo por 90 dias após o cancelamento. Você pode exportar tudo antes desse prazo.</div>
+  </div>
+</div>
+
+<!-- CHECKOUT MODAL -->
+<div id="checkoutOverlay" onclick="closeCheckoutOutside(event)">
+  <div class="checkout-box">
+    <div class="checkout-header">
+      <div>
+        <div class="checkout-plan-badge" id="co-badge">⚡ Plano Profissional</div>
+        <h2>Iniciar período grátis</h2>
+      </div>
+      <button class="checkout-close" onclick="closeCheckout()">✕</button>
+    </div>
+
+    <div class="checkout-summary">
+      <div class="summary-row">
+        <span class="summary-label">Plano</span>
+        <span class="summary-val" id="co-plan-name">Profissional</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label">Período grátis</span>
+        <span class="summary-val" style="color:var(--green)">7 dias</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label">Cobrança hoje</span>
+        <span class="summary-val" style="color:var(--green)">R$ 0,00</span>
+      </div>
+      <div class="summary-row summary-total">
+        <span class="summary-label">Após 7 dias</span>
+        <span class="summary-val" id="co-price">R$ 89/mês</span>
+      </div>
+    </div>
+
+    <div class="checkout-form">
+      <div class="co-field">
+        <label>Email</label>
+        <input type="email" id="co-email" placeholder="voce@email.com">
+      </div>
+      <div class="co-row">
+        <div class="co-field">
+          <label>Nome</label>
+          <input type="text" id="co-name" placeholder="Seu nome">
+        </div>
+        <div class="co-field">
+          <label>CPF</label>
+          <input type="text" id="co-cpf" placeholder="000.000.000-00" oninput="maskCPF(this)">
+        </div>
+      </div>
+
+      <div class="co-field">
+        <label>Dados do cartão</label>
+        <div id="card-element"></div>
+        <div id="card-errors"></div>
+      </div>
+
+      <button class="checkout-btn" id="checkoutBtn" onclick="handleCheckout()">
+        <span id="checkoutBtnTxt">🎁 Começar 7 dias grátis</span>
+      </button>
+
+      <div class="checkout-footer">
+        🔒 Pagamento seguro via Stripe · Cancele quando quiser
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div id="successScreen">
+  <div class="success-icon">✅</div>
+  <h2>Bem-vindo ao Snapost!</h2>
+  <p id="successMsg">Seu período gratuito de 7 dias começou. Você só será cobrado depois disso.</p>
+  <button class="success-btn" onclick="window.open('snapost-auth-v3.html')">
+    ⚡ Acessar o app agora
+  </button>
+</div>
+
+<script>
+// ══════════════════════════════════
+//  CONFIG STRIPE
+// ══════════════════════════════════
+const STRIPE_PK = 'pk_test_51TdhKpD0ogL4bxCrfvPbvvF5tv86BWmt71mAkFeVY1zTIzjQT6eHepDO6Lduax21HvA3NDvrwkcqs1DidlMXOfUc00HLxct6x3';
+
+// Price IDs reais do Stripe
+// SK (backend only): sk_test_51TdhKpD0ogL4bxCr6evg9az0divAXQKz9zjjv8DUwYPh97ug0ENZyhwlHAgP4fH9PrDcm22luDili9sxPwa3hzsA00CwJptkPW
+const PRICES = {
+  monthly: {
+    criador:  'price_1TdhfnD0ogL4bxCrN0mkESrf',
+    pro:      'price_1TdhhjD0ogL4bxCr0xNFuerM',
+    agencia:  'price_1TdhkRD0ogL4bxCrvX3gqXZK',
+  },
+  annual: {
+    criador:  'price_1TdhfnD0ogL4bxCrN0mkESrf',
+    pro:      'price_1TdhhjD0ogL4bxCr0xNFuerM',
+    agencia:  'price_1TdhkRD0ogL4bxCrvX3gqXZK',
+  }
+};
+
+const PLAN_DATA = {
+  criador:  { name:'Criador',        monthly:39,  annual:31  },
+  pro:      { name:'Profissional',   monthly:89,  annual:71  },
+  agencia:  { name:'Agência',        monthly:249, annual:199 },
+};
+
+// ══════════════════════════════════
+//  STATE
+// ══════════════════════════════════
+let stripe, cardElement;
+let billing = 'monthly';
+let selectedPlan = 'pro';
+
+// ══════════════════════════════════
+//  INIT STRIPE
+// ══════════════════════════════════
+function initStripe() {
+  try {
+    stripe = Stripe(STRIPE_PK);
+    const elements = stripe.elements({
+      appearance: {
+        theme: 'night',
+        variables: {
+          colorPrimary: '#FF4D1C',
+          colorBackground: '#17171F',
+          colorText: '#F0ECF8',
+          colorDanger: '#ff6b8a',
+          borderRadius: '11px',
+          fontFamily: 'DM Sans, sans-serif',
+        }
+      }
+    });
+    cardElement = elements.create('card', {
+      style: {
+        base: {
+          color: '#F0ECF8',
+          fontFamily: 'DM Sans, sans-serif',
+          fontSize: '15px',
+          '::placeholder': { color: '#5A5470' },
+        },
+        invalid: { color: '#ff6b8a' },
+      }
+    });
+    cardElement.mount('#card-element');
+    cardElement.on('change', e => {
+      const err = document.getElementById('card-errors');
+      err.textContent = e.error ? '⚠️ ' + e.error.message : '';
+    });
+  } catch(e) {
+    console.warn('Stripe init:', e);
+  }
+}
+
+// ══════════════════════════════════
+//  BILLING TOGGLE
+// ══════════════════════════════════
+function setBilling(type) {
+  billing = type;
+  document.getElementById('togMonthly').classList.toggle('on', type === 'monthly');
+  document.getElementById('togAnnual').classList.toggle('on', type === 'annual');
+
+  Object.keys(PLAN_DATA).forEach(key => {
+    const d = PLAN_DATA[key];
+    const price = type === 'annual' ? d.annual : d.monthly;
+    const saving = type === 'annual' ? `Economiza R$${(d.monthly - d.annual) * 12}/ano` : '';
+    const period = type === 'annual' ? 'anualmente' : 'mensalmente';
+
+    document.getElementById(`price-${key === 'pro' ? 'pro' : key}`).textContent = price;
+    document.getElementById(`savings-${key === 'pro' ? 'pro' : key}`).textContent = saving || '\u00a0';
+    document.getElementById(`period-${key === 'pro' ? 'pro' : key}`).textContent = period;
+  });
+}
+
+// ══════════════════════════════════
+//  CHECKOUT
+// ══════════════════════════════════
+function openCheckout(plan) {
+  selectedPlan = plan;
+  const d = PLAN_DATA[plan];
+  const price = billing === 'annual' ? d.annual : d.monthly;
+
+  document.getElementById('co-badge').textContent = `⚡ Plano ${d.name}`;
+  document.getElementById('co-plan-name').textContent = d.name;
+  document.getElementById('co-price').textContent = `R$ ${price}/mês`;
+
+  document.getElementById('checkoutOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+
+  if (!stripe) initStripe();
+}
+
+function closeCheckout() {
+  document.getElementById('checkoutOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+function closeCheckoutOutside(e) {
+  if (e.target === document.getElementById('checkoutOverlay')) closeCheckout();
+}
+
+async function handleCheckout() {
+  const email = document.getElementById('co-email').value.trim();
+  const name  = document.getElementById('co-name').value.trim();
+
+  if (!email || !name) {
+    document.getElementById('card-errors').textContent = '⚠️ Preencha email e nome.';
+    return;
+  }
+  if (!isEmail(email)) {
+    document.getElementById('card-errors').textContent = '⚠️ Email inválido.';
+    return;
+  }
+
+  setBusy(true);
+
+  try {
+    // 1. Criar PaymentMethod
+    const { paymentMethod, error } = await stripe.createPaymentMethod({
+      type: 'card',
+      card: cardElement,
+      billing_details: { name, email },
+    });
+
+    if (error) {
+      document.getElementById('card-errors').textContent = '⚠️ ' + error.message;
+      setBusy(false);
+      return;
+    }
+
+    // 2. Aqui você chamaria seu backend para criar o Customer + Subscription
+    // Exemplo:
+    // const res = await fetch('/api/create-subscription', {
+    //   method: 'POST',
+    //   headers: {'Content-Type':'application/json'},
+    //   body: JSON.stringify({
+    //     paymentMethodId: paymentMethod.id,
+    //     priceId: PRICES[billing][selectedPlan],
+    //     email, name,
+    //     trialDays: 7,
+    //   })
+    // });
+    // const data = await res.json();
+    // if (data.requiresAction) { await stripe.confirmCardPayment(data.clientSecret); }
+
+    // Demo: simular sucesso após 1.5s
+    await delay(1500);
+    showSuccess();
+
+  } catch(err) {
+    document.getElementById('card-errors').textContent = '⚠️ Erro inesperado. Tente novamente.';
+    setBusy(false);
+  }
+}
+
+function showSuccess() {
+  const d = PLAN_DATA[selectedPlan];
+  document.getElementById('successMsg').textContent =
+    `Seu plano ${d.name} está ativo! Os 7 dias gratuitos começaram agora. Você não será cobrado antes disso.`;
+  closeCheckout();
+  document.getElementById('successScreen').classList.add('show');
+}
+
+function setBusy(busy) {
+  const btn = document.getElementById('checkoutBtn');
+  const txt = document.getElementById('checkoutBtnTxt');
+  btn.disabled = busy;
+  txt.innerHTML = busy
+    ? '<div class="spinner"></div> Processando...'
+    : '🎁 Começar 7 dias grátis';
+}
+
+// ══════════════════════════════════
+//  FAQ
+// ══════════════════════════════════
+function toggleFaq(el) {
+  el.parentElement.classList.toggle('open');
+}
+
+// ══════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════
+function isEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+function delay(ms)  { return new Promise(r => setTimeout(r, ms)); }
+
+function maskCPF(input) {
+  let v = input.value.replace(/\D/g,'').substring(0,11);
+  v = v.replace(/(\d{3})(\d)/,'$1.$2');
+  v = v.replace(/(\d{3})(\d)/,'$1.$2');
+  v = v.replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+  input.value = v;
+}
+
+// ══════════════════════════════════
+//  INIT
+// ══════════════════════════════════
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeCheckout();
+});
+</script>
+</body>
+</html>
