@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snapost — Conectar Redes Sociais</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#07070B; --s1:#0F0F15; --s2:#17171F; --s3:#1F1F29;
+  --border:rgba(255,255,255,0.055); --border2:rgba(255,255,255,0.10);
+  --border3:rgba(255,255,255,0.18);
+  --text:#F0ECF8; --text2:#A89FC0; --muted:#5A5470;
+  --accent:#FF4D1C; --glow:rgba(255,77,28,0.20);
+  --green:#00E0A0; --green-bg:rgba(0,224,160,0.07);
+  --yellow:#FFB800; --red:#FF3A5C; --red-bg:rgba(255,58,92,0.07);
+  --ig: linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);
+  --fb:#1877F2; --tk:#010101; --li:#0A66C2;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* NAV */
+nav{
+  height:58px;background:rgba(10,10,14,0.95);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 32px;gap:20px;
+  position:sticky;top:0;z-index:50;
+  backdrop-filter:blur(20px);
+}
+.nav-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;text-decoration:none;color:var(--text);letter-spacing:-0.3px;}
+.nav-logo em{font-style:normal;color:var(--accent);}
+.nav-divider{width:1px;height:18px;background:var(--border2);}
+.nav-back{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:0.8rem;text-decoration:none;cursor:pointer;transition:color 0.2s;}
+.nav-back:hover{color:var(--text2);}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.status-pill{
+  display:flex;align-items:center;gap:6px;
+  background:var(--s2);
+  border:1px solid var(--border2);
+  border-radius:8px;padding:5px 12px;
+  font-size:0.72rem;color:var(--text2);font-weight:500;
+  letter-spacing:0.2px;
+}
+.status-pill.has-conn{border-color:rgba(0,224,160,0.2);color:var(--green);}
+.status-dot{width:5px;height:5px;background:var(--muted);border-radius:50%;}
+.status-pill.has-conn .status-dot{background:var(--green);animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* LAYOUT */
+.page{max-width:900px;margin:0 auto;padding:48px 24px;}
+
+.page-header{margin-bottom:40px;}
+.page-tag{font-size:0.7rem;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:12px;font-weight:500;}
+.page-title{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;letter-spacing:-1px;margin-bottom:10px;}
+.page-sub{font-size:0.9rem;color:var(--text2);line-height:1.7;max-width:520px;}
+
+/* PROGRESS BAR */
+.progress-bar{
+  background:var(--s1);border:1px solid var(--border);
+  border-radius:14px;padding:18px 24px;margin-bottom:28px;
+  display:grid;grid-template-columns:auto 1fr auto;
+  align-items:center;gap:16px;
+}
+.prog-label{font-size:0.75rem;color:var(--muted);white-space:nowrap;letter-spacing:0.3px;text-transform:uppercase;}
+.prog-track{height:3px;background:var(--s3);border-radius:100px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--green);border-radius:100px;transition:width 0.5s ease;}
+.prog-count{font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;color:var(--text2);white-space:nowrap;}
+
+/* NETWORKS GRID */
+.networks-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:1px;
+  background:var(--border2);
+  border-radius:20px;
+  overflow:hidden;
+  margin-bottom:32px;
+}
+
+.net-card{
+  background:var(--s1);
+  padding:20px 24px;
+  display:flex;align-items:center;gap:16px;
+  transition:background 0.2s;
+  position:relative;
+  overflow:hidden;
+}
+.net-card:hover:not(.connected){background:var(--s2);}
+.net-card.connected{background:rgba(0,224,160,0.03);}
+
+/* Accent left bar for connected */
+.net-card.connected::before{
+  content:'';
+  position:absolute;left:0;top:0;bottom:0;
+  width:3px;background:var(--green);
+}
+
+.net-logo{
+  width:44px;height:44px;flex-shrink:0;
+  border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.2rem;font-weight:700;
+}
+.net-logo.ig{background:var(--ig);}
+.net-logo.fb{background:var(--fb);}
+.net-logo.tk{background:#111;border:1px solid #2a2a2a;}
+.net-logo.li{background:var(--li);}
+.net-logo.tw{background:#111;border:1px solid #2a2a2a;}
+.net-logo.pt{background:#E60023;}
+.net-logo.yt{background:#FF0000;}
+.net-logo.th{background:#111;border:1px solid #2a2a2a;}
+
+.net-info{flex:1;overflow:hidden;min-width:0;}
+.net-name{
+  font-family:'Syne',sans-serif;
+  font-size:0.88rem;font-weight:700;
+  margin-bottom:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.net-desc{font-size:0.72rem;color:var(--muted);line-height:1.3;}
+.net-account{
+  font-size:0.72rem;color:var(--green);
+  margin-top:3px;display:none;
+  font-weight:500;
+}
+.net-card.connected .net-account{display:block;}
+
+.net-status{
+  display:flex;align-items:center;gap:5px;
+  font-size:0.68rem;color:var(--muted);
+  margin-top:3px;
+}
+.net-status-dot{
+  width:5px;height:5px;border-radius:50%;
+  background:var(--muted);flex-shrink:0;
+}
+.net-card.connected .net-status-dot{background:var(--green);}
+.net-card.connected .net-status{color:var(--green);}
+
+.net-action{flex-shrink:0;margin-left:auto;}
+
+.btn-connect{
+  background:transparent;
+  border:1px solid var(--border2);
+  border-radius:8px;padding:7px 16px;
+  font-family:'DM Sans',sans-serif;font-size:0.78rem;font-weight:500;
+  color:var(--text2);cursor:pointer;transition:all 0.15s;
+  white-space:nowrap;
+}
+.btn-connect:hover{border-color:var(--accent);color:var(--accent);}
+
+.btn-connected{
+  background:transparent;
+  border:1px solid rgba(0,224,160,0.25);
+  border-radius:8px;padding:7px 16px;
+  font-family:'DM Sans',sans-serif;font-size:0.78rem;font-weight:500;
+  color:var(--green);cursor:pointer;transition:all 0.15s;
+  display:flex;align-items:center;gap:6px;
+  white-space:nowrap;
+}
+.btn-connected:hover{border-color:rgba(255,58,92,0.3);color:var(--red);background:var(--red-bg);}
+
+.btn-soon{
+  background:transparent;
+  border:1px solid var(--border);
+  border-radius:8px;padding:7px 14px;
+  font-size:0.72rem;color:var(--muted);
+  cursor:not-allowed;white-space:nowrap;
+  letter-spacing:0.3px;
+}
+
+.net-check{
+  position:absolute;top:10px;right:10px;
+  width:18px;height:18px;
+  background:var(--green);border-radius:50%;
+  display:none;align-items:center;justify-content:center;
+  font-size:0.6rem;color:white;font-weight:700;
+}
+.net-card.connected .net-check{display:flex;}
+
+/* META OAUTH SECTION */
+.meta-section{
+  background:var(--s1);border:1px solid var(--border2);
+  border-radius:20px;padding:28px;margin-bottom:20px;
+}
+.meta-header{display:flex;align-items:center;gap:14px;margin-bottom:20px;}
+.meta-icon{
+  width:44px;height:44px;border-radius:12px;
+  background:linear-gradient(135deg,#0081FB,#0064E0);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.2rem;flex-shrink:0;
+}
+.meta-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;}
+.meta-sub{font-size:0.78rem;color:var(--muted);margin-top:2px;}
+
+.oauth-steps{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;}
+.oauth-step{
+  display:flex;align-items:center;gap:12px;
+  background:var(--s2);border-radius:12px;padding:12px 16px;
+  font-size:0.82rem;color:var(--text2);
+}
+.oauth-step-n{
+  width:24px;height:24px;flex-shrink:0;
+  border-radius:50%;background:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.68rem;font-weight:700;color:white;
+}
+.oauth-step.done .oauth-step-n{background:var(--green);}
+.oauth-step.done{color:var(--green);}
+
+.oauth-btn{
+  width:100%;padding:14px;
+  background:linear-gradient(135deg,#0081FB,#0064E0);
+  border:none;border-radius:12px;
+  font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;
+  color:white;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:all 0.2s;
+  box-shadow:0 6px 24px rgba(0,100,224,0.3);
+}
+.oauth-btn:hover{transform:translateY(-2px);box-shadow:0 10px 32px rgba(0,100,224,0.35);}
+.oauth-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+
+/* TOKEN SECTION */
+.token-section{
+  background:var(--s2);border:1px solid var(--border);
+  border-radius:14px;padding:16px 20px;margin-top:16px;
+}
+.token-label{font-size:0.72rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;}
+.token-input{
+  width:100%;background:var(--s3);border:1.5px solid var(--border2);
+  border-radius:10px;padding:10px 14px;
+  color:var(--text2);font-family:monospace;font-size:0.78rem;
+  outline:none;transition:border-color 0.2s;
+}
+.token-input:focus{border-color:var(--accent);}
+.token-input::placeholder{color:var(--muted);}
+.token-btn{
+  margin-top:10px;width:100%;padding:12px;
+  background:var(--accent);border:none;border-radius:10px;
+  font-family:'Syne',sans-serif;font-weight:700;font-size:0.88rem;
+  color:white;cursor:pointer;transition:all 0.2s;
+}
+.token-btn:hover{opacity:0.9;}
+
+/* ALERT */
+.alert{
+  border-radius:12px;padding:12px 16px;
+  font-size:0.82rem;margin-bottom:16px;
+  display:none;align-items:center;gap:10px;line-height:1.5;
+}
+.alert.show{display:flex;}
+.alert.ok{background:var(--green-bg);border:1px solid rgba(0,224,160,0.2);color:var(--green);}
+.alert.err{background:var(--red-bg);border:1px solid rgba(255,58,92,0.2);color:#ff8099;}
+.alert.info{background:rgba(79,142,247,0.07);border:1px solid rgba(79,142,247,0.2);color:#93c5fd;}
+
+/* PUBLISH TEST */
+.test-section{
+  background:var(--s1);border:1px solid var(--border2);
+  border-radius:20px;padding:28px;
+}
+.test-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;margin-bottom:6px;}
+.test-sub{font-size:0.82rem;color:var(--muted);margin-bottom:20px;}
+
+.test-form{display:flex;flex-direction:column;gap:12px;}
+.test-field label{font-size:0.74rem;font-weight:600;color:var(--text2);margin-bottom:6px;display:block;}
+.test-field input,.test-field textarea{
+  width:100%;background:var(--s2);border:1.5px solid var(--border2);
+  border-radius:10px;padding:11px 14px;
+  color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.88rem;
+  outline:none;transition:border-color 0.2s;resize:none;
+}
+.test-field input:focus,.test-field textarea:focus{border-color:var(--accent);}
+.test-field input::placeholder,.test-field textarea::placeholder{color:var(--muted);}
+
+.test-btn{
+  padding:14px;background:var(--accent);border:none;
+  border-radius:12px;color:white;
+  font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;
+  box-shadow:0 6px 24px var(--glow);transition:all 0.2s;
+}
+.test-btn:hover:not(:disabled){transform:translateY(-2px);}
+.test-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+
+/* RESULT */
+.result-box{
+  background:var(--s3);border-radius:12px;
+  padding:14px 16px;margin-top:12px;
+  font-family:monospace;font-size:0.78rem;
+  color:var(--text2);line-height:1.7;
+  display:none;max-height:200px;overflow-y:auto;
+  white-space:pre-wrap;word-break:break-all;
+}
+.result-box.show{display:block;}
+.result-box.ok{border:1px solid rgba(0,224,160,0.2);color:var(--green);}
+.result-box.err{border:1px solid rgba(255,58,92,0.2);color:#ff8099;}
+
+/* SPINNER */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{width:16px;height:16px;border:2.5px solid rgba(255,255,255,0.2);border-top-color:white;border-radius:50%;animation:spin 0.55s linear infinite;flex-shrink:0;}
+
+@media(max-width:640px){
+  .networks-grid{grid-template-columns:1fr;}
+  .page{padding:28px 16px;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="index.html">Snap<em>ost</em></a>
+  <div class="nav-divider"></div>
+  <a class="nav-back" href="snapost-mvp.html">← Editor</a>
+  <div class="nav-right">
+    <div class="status-pill" id="statusPill"><div class="status-dot"></div> <span id="connCount">0</span> de 8 conectadas</div>
+  </div>
+</nav>
+
+<div class="page">
+
+  <div class="page-header">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <div style="font-size:0.65rem;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-weight:500;">Integrações</div>
+      <div style="height:1px;flex:1;background:var(--border);max-width:120px;"></div>
+    </div>
+    <h1 class="page-title">Redes Sociais</h1>
+    <p class="page-sub">Autorize cada plataforma uma única vez. O Snapost publica automaticamente em todas as redes conectadas.</p>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-bar">
+    <span class="prog-label">Redes conectadas</span>
+    <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+    <span class="prog-count"><span id="progNum">0</span>/8</span>
+  </div>
+
+  <!-- NETWORKS -->
+  <div class="networks-grid">
+
+    <div class="net-card" id="card-instagram">
+      <div class="net-check">✓</div>
+      <div class="net-logo ig">📸</div>
+      <div class="net-info">
+        <div class="net-name">Instagram</div>
+        <div class="net-desc">Feed · Stories · Reels</div>
+        <div class="net-account" id="acc-instagram">—</div>
+        <div class="net-status"><div class="net-status-dot"></div><span class="net-status-txt">Não conectado</span></div>
+      </div>
+      <div class="net-action">
+        <button class="btn-connect" onclick="connectMeta('instagram')">Conectar</button>
+      </div>
+    </div>
+
+    <div class="net-card" id="card-facebook">
+      <div class="net-check">✓</div>
+      <div class="net-logo fb">f</div>
+      <div class="net-info">
+        <div class="net-name">Facebook</div>
+        <div class="net-desc">Feed · Página · Stories</div>
+        <div class="net-account" id="acc-facebook">—</div>
+        <div class="net-status"><div class="net-status-dot"></div><span class="net-status-txt">Não conectado</span></div>
+      </div>
+      <div class="net-action">
+        <button class="btn-connect" onclick="connectMeta('facebook')">Conectar</button>
+      </div>
+    </div>
+
+    <div class="net-card" id="card-tiktok">
+      <div class="net-check">✓</div>
+      <div class="net-logo tk">🎵</div>
+      <div class="net-info">
+        <div class="net-name">TikTok</div>
+        <div class="net-desc">Fotos · Vídeos · Trends</div>
+        <div class="net-status"><div class="net-status-dot"></div><span class="net-status-txt">Em breve</span></div>
+        <div class="net-account" id="acc-tiktok">—</div>
+      </div>
+      <div class="net-action">
+        <span class="btn-soon">Em breve</span>
+      </div>
+    </div>
+
+    <div class="net-card" id="card-linkedin">
+      <div class="net-check">✓</div>
+      <div class="net-logo li">in</div>
+      <div class="net-info">
+        <div class="net-name">LinkedIn</div>
+        <div class="net-desc">Feed · Artigos · Empresa</div>
+        <div class="net-status"><div class="net-status-dot"></div><span class="net-status-txt">Em breve</span></div>
+        <div class="net-account" id="acc-linkedin">—</div>
+      </div>
+      <div class="net-action">
+        <span class="btn-soon">Em breve</span>
+      </div>
+    </div>
+
+    <div class="net-card" id="card-twitter">
+      <div class="net-check">✓</div>
+      <div class="net-logo tw">𝕏</div>
+      <div class="net-info">
+        <div class="net-name">X / Twitter</div>
+        <div class="net-desc">Posts · Threads · Mídia</div>
+        <div class="net-status"><div class="net-status-dot"></div><span class="net-status-txt">Em breve</span></div>
+        <div class="net-account" id="acc-twitter">—</div>
+      </div>
+      <div class="net-action">
+        <span class="btn-soon">Em breve</span>
+      </div>
+    </div>
+
+    <div class="net-card" id="card-pinterest">
+      <div class="net-check">✓</div>
+      <div class="net-logo pt">📌</div>
+      <div class="net-info">
+        <div class="net-name">Pinterest</div>
+        <div class="net-desc">Pins · Boards · Ideias</div>
+        <div class="net-status"><div class="net-status-dot"></div><span class="net-status-txt">Em breve</span></div>
+        <div class="net-account" id="acc-pinterest">—</div>
+      </div>
+      <div class="net-action">
+        <span class="btn-soon">Em breve</span>
+      </div>
+    </div>
+
+    <div class="net-card" id="card-youtube">
+      <div class="net-check">✓</div>
+      <div class="net-logo yt">▶</div>
+      <div class="net-info">
+        <div class="net-name">YouTube</div>
+        <div class="net-desc">Shorts · Comunidade</div>
+        <div class="net-status"><div class="net-status-dot"></div><span class="net-status-txt">Em breve</span></div>
+        <div class="net-account" id="acc-youtube">—</div>
+      </div>
+      <div class="net-action">
+        <span class="btn-soon">Em breve</span>
+      </div>
+    </div>
+
+    <div class="net-card" id="card-threads">
+      <div class="net-check">✓</div>
+      <div class="net-logo th">@</div>
+      <div class="net-info">
+        <div class="net-name">Threads</div>
+        <div class="net-desc">Posts · Conversas</div>
+        <div class="net-status"><div class="net-status-dot"></div><span class="net-status-txt">Em breve</span></div>
+        <div class="net-account" id="acc-threads">—</div>
+      </div>
+      <div class="net-action">
+        <span class="btn-soon">Em breve</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- META OAUTH -->
+  <div class="meta-section" id="metaSection">
+    <div class="meta-header">
+      <div class="meta-icon">🔗</div>
+      <div>
+        <div class="meta-title">Conectar Instagram + Facebook via Meta</div>
+        <div class="meta-sub">App ID: 2356433705096591 · OAuth 2.0</div>
+      </div>
+    </div>
+
+    <div class="oauth-steps">
+      <div class="oauth-step done" id="oauthStep1">
+        <div class="oauth-step-n">✓</div>
+        App Meta criado e configurado
+      </div>
+      <div class="oauth-step done" id="oauthStep2">
+        <div class="oauth-step-n">✓</div>
+        Graph API do Instagram adicionada
+      </div>
+      <div class="oauth-step" id="oauthStep3">
+        <div class="oauth-step-n">3</div>
+        Autorizar sua conta Instagram/Facebook
+      </div>
+      <div class="oauth-step" id="oauthStep4">
+        <div class="oauth-step-n">4</div>
+        Receber Access Token e conectar
+      </div>
+    </div>
+
+    <div class="alert info show">
+      <span>ℹ️</span>
+      <span>O app está em modo <strong>desenvolvimento</strong>. Para testar, adicione sua conta como usuário de teste nas configurações do app Meta.</span>
+    </div>
+
+    <button class="oauth-btn" id="oauthBtn" onclick="startMetaOAuth()">
+      <span id="oauthBtnTxt">🔵 Autorizar com Meta / Facebook</span>
+    </button>
+
+    <!-- Manual token input -->
+    <div class="token-section">
+      <div class="token-label">Ou cole o Access Token manualmente</div>
+      <input class="token-input" id="tokenInput" placeholder="EAABsbCS... (token do Graph API Explorer)">
+      <button class="token-btn" onclick="connectWithToken()">✅ Conectar com este token</button>
+    </div>
+  </div>
+
+  <!-- TEST PUBLISH -->
+  <div class="test-section" style="margin-top:20px;" id="testSection">
+    <div class="test-title">🧪 Testar publicação</div>
+    <div class="test-sub">Após conectar, teste uma publicação real no Instagram.</div>
+
+    <div class="alert ok" id="testOk"><span>✅</span><span id="testOkMsg">Publicado com sucesso!</span></div>
+    <div class="alert err" id="testErr"><span>⚠️</span><span id="testErrMsg">Erro ao publicar.</span></div>
+
+    <div class="test-form">
+      <div class="test-field">
+        <label>ID da Conta Instagram Business</label>
+        <input type="text" id="igAccountId" placeholder="17841400000000000">
+      </div>
+      <div class="test-field">
+        <label>URL da imagem (pública, hospedada)</label>
+        <input type="text" id="testImageUrl" placeholder="https://effemme.vercel.app/foto.jpg">
+      </div>
+      <div class="test-field">
+        <label>Legenda</label>
+        <textarea id="testCaption" rows="3" placeholder="Legenda gerada pela IA do Snapost ✨ #snapost #ia #automacao"></textarea>
+      </div>
+      <button class="test-btn" id="testBtn" onclick="testPublish()">
+        <span id="testBtnTxt">📤 Publicar no Instagram</span>
+      </button>
+      <div class="result-box" id="resultBox"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════
+//  CONFIG META
+// ══════════════════════════════════
+const META_APP_ID     = '2356433705096591';
+const META_APP_SECRET = '77e73f03d4e275bb3d14f3b47023ad55';
+const REDIRECT_URI    = 'https://effemme.vercel.app/snapost-networks.html';
+
+const SCOPES = [
+  'instagram_basic',
+  'instagram_content_publish',
+  'instagram_manage_insights',
+  'pages_show_list',
+  'pages_read_engagement',
+  'public_profile',
+].join(',');
+
+// ══════════════════════════════════
+//  STATE
+// ══════════════════════════════════
+let accessToken = localStorage.getItem('snapost_meta_token') || 'EAAhfKfnt1Y8BRr6sqUZA10A2MUJSS8yOXkNmbMwOFSNk0r9cM8IesRV5pzC9ZCblPf8Ju56v7nDGQnfGNJhYhMtxaKbQmZCZCZA8ZBzcNg4WD9pXRqBO9H3Qn41TEIc53sRbZC2vxFZBnlazPKZBdqfTJmrKeKvZCnQwZCx67OrwXKoz8ZBtGfRd4QE1vknZCaU2ZAlZAYYRxw9pxw1SYMQu7lhrWDZCzERY63xvMVXxsDLZBLyXuZCjaXMAiM77ZCRKanea4ZCwnDodZB5q8ZCh2GKreMkkfiXNqgpUPcFwZDZD';
+let connectedNets = JSON.parse(localStorage.getItem('snapost_connected') || '[]');
+
+// ══════════════════════════════════
+//  INIT
+// ══════════════════════════════════
+function init() {
+  // Check OAuth callback
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (code) {
+    handleOAuthCallback(code);
+    return;
+  }
+
+  // Check saved token
+  if (accessToken) {
+    markConnected('instagram', '@guimo15 · Business conectado ✓');
+    markConnected('facebook', 'Página conectada via Meta ✓');
+  }
+
+  // Restore saved connections
+  connectedNets.forEach(net => {
+    if (net !== 'instagram' && net !== 'facebook') {
+      markConnected(net, 'Conta salva');
+    }
+  });
+
+  updateProgress();
+}
+
+// ══════════════════════════════════
+//  OAUTH FLOW
+// ══════════════════════════════════
+function startMetaOAuth() {
+  const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?` +
+    `client_id=${META_APP_ID}` +
+    `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
+    `&scope=${encodeURIComponent(SCOPES)}` +
+    `&response_type=code` +
+    `&state=snapost_auth`;
+
+  // Open in popup
+  const w = 600, h = 700;
+  const left = (screen.width - w) / 2;
+  const top  = (screen.height - h) / 2;
+  const popup = window.open(authUrl, 'MetaAuth',
+    `width=${w},height=${h},left=${left},top=${top}`);
+
+  // Listen for callback
+  const timer = setInterval(() => {
+    try {
+      if (popup.closed) {
+        clearInterval(timer);
+        return;
+      }
+      const url = popup.location.href;
+      if (url.includes('code=')) {
+        const code = new URLSearchParams(new URL(url).search).get('code');
+        popup.close();
+        clearInterval(timer);
+        handleOAuthCallback(code);
+      }
+    } catch(e) {
+      // Cross-origin — normal while on Facebook domain
+    }
+  }, 500);
+}
+
+async function handleOAuthCallback(code) {
+  setOAuthBusy(true);
+  markOAuthStep(3);
+
+  // NOTE: In production, this exchange MUST happen server-side
+  // to protect the App Secret. Here we show the flow for demo.
+  // Use a Supabase Edge Function or backend endpoint.
+  showAlert('testErr', '⚠️ Em produção: troque o código por token no seu backend (Supabase Edge Function) para proteger o App Secret.');
+
+  // Simulate token exchange for demo
+  await delay(1500);
+  const fakeToken = 'EAADemo' + Math.random().toString(36).substr(2, 20);
+  saveToken(fakeToken);
+  markOAuthStep(4, true);
+  setOAuthBusy(false);
+}
+
+function connectWithToken() {
+  const token = document.getElementById('tokenInput').value.trim();
+  if (!token || token.length < 10) {
+    alert('Cole um token válido.');
+    return;
+  }
+  saveToken(token);
+}
+
+function saveToken(token) {
+  accessToken = token;
+  localStorage.setItem('snapost_meta_token', token);
+  markConnected('instagram', '@sua_conta · Business');
+  markConnected('facebook', 'Sua Página · conectada');
+  updateProgress();
+
+  document.getElementById('oauthStep3').classList.add('done');
+  document.getElementById('oauthStep3').querySelector('.oauth-step-n').textContent = '✓';
+  document.getElementById('oauthStep4').classList.add('done');
+  document.getElementById('oauthStep4').querySelector('.oauth-step-n').textContent = '✓';
+}
+
+// ══════════════════════════════════
+//  CONNECT INDIVIDUAL
+// ══════════════════════════════════
+function connectMeta(net) {
+  if (net === 'instagram' || net === 'facebook') {
+    startMetaOAuth();
+  }
+}
+
+function markConnected(net, account) {
+  const card = document.getElementById(`card-${net}`);
+  const acc  = document.getElementById(`acc-${net}`);
+  if (!card) return;
+
+  card.classList.add('connected');
+  if (acc) acc.textContent = account;
+
+  // Change button
+  const btn = card.querySelector('.btn-connect');
+  if (btn) {
+    btn.className = 'btn-connected';
+    btn.innerHTML = '<span>✓ Conectado</span>';
+    btn.onclick = () => disconnectNet(net);
+  }
+
+  // Save
+  if (!connectedNets.includes(net)) {
+    connectedNets.push(net);
+    localStorage.setItem('snapost_connected', JSON.stringify(connectedNets));
+  }
+}
+
+function disconnectNet(net) {
+  if (!confirm(`Desconectar ${net}?`)) return;
+  const card = document.getElementById(`card-${net}`);
+  card.classList.remove('connected');
+
+  const btn = card.querySelector('.btn-connected');
+  if (btn) {
+    btn.className = 'btn-connect';
+    btn.innerHTML = 'Conectar';
+    btn.onclick = () => connectMeta(net);
+  }
+
+  connectedNets = connectedNets.filter(n => n !== net);
+  localStorage.setItem('snapost_connected', JSON.stringify(connectedNets));
+
+  if (net === 'instagram' || net === 'facebook') {
+    localStorage.removeItem('snapost_meta_token');
+    accessToken = '';
+  }
+  updateProgress();
+}
+
+// ══════════════════════════════════
+//  TEST PUBLISH (Graph API)
+// ══════════════════════════════════
+async function testPublish() {
+  const igId    = document.getElementById('igAccountId').value.trim();
+  const imgUrl  = document.getElementById('testImageUrl').value.trim();
+  const caption = document.getElementById('testCaption').value.trim();
+
+  if (!accessToken) { showAlert('testErr','Conecte sua conta primeiro.'); return; }
+  if (!igId)        { showAlert('testErr','Informe o ID da conta Instagram.'); return; }
+  if (!imgUrl)      { showAlert('testErr','Informe a URL da imagem.'); return; }
+
+  setTestBusy(true);
+  clearAlerts();
+
+  try {
+    // Step 1: Create media container
+    const createRes = await fetch(
+      `https://graph.facebook.com/v19.0/${igId}/media`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        image_url: imgUrl,
+        caption: caption,
+        access_token: accessToken,
+      })
+    });
+    const createData = await createRes.json();
+    showResult(JSON.stringify(createData, null, 2), !createData.error);
+
+    if (createData.error) {
+      showAlert('testErr', createData.error.message);
+      setTestBusy(false);
+      return;
+    }
+
+    // Step 2: Publish container
+    const publishRes = await fetch(
+      `https://graph.facebook.com/v19.0/${igId}/media_publish`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        creation_id: createData.id,
+        access_token: accessToken,
+      })
+    });
+    const publishData = await publishRes.json();
+    showResult(JSON.stringify({create: createData, publish: publishData}, null, 2), !publishData.error);
+
+    if (publishData.id) {
+      showAlert('testOk', `✅ Publicado! Post ID: ${publishData.id}`);
+      markConnected('instagram', '@conta · Publicação testada ✓');
+    } else {
+      showAlert('testErr', publishData.error?.message || 'Erro ao publicar.');
+    }
+
+  } catch(e) {
+    showAlert('testErr', 'Erro de rede: ' + e.message);
+    showResult(e.message, false);
+  }
+
+  setTestBusy(false);
+}
+
+// ══════════════════════════════════
+//  UI HELPERS
+// ══════════════════════════════════
+function updateProgress() {
+  const n = connectedNets.length;
+  const pct = Math.round((n / 8) * 100);
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('progNum').textContent = n;
+  document.getElementById('connCount').textContent = n;
+  const pill = document.getElementById('statusPill');
+  if(pill) pill.classList.toggle('has-conn', n > 0);
+  // Update status texts
+  document.querySelectorAll('.net-card.connected .net-status-txt').forEach(el => {
+    el.textContent = 'Conectado';
+  });
+}
+
+function markOAuthStep(step, done=false) {
+  for (let i = 3; i <= step; i++) {
+    const el = document.getElementById(`oauthStep${i}`);
+    if (el && (done || i < step)) {
+      el.classList.add('done');
+      el.querySelector('.oauth-step-n').textContent = '✓';
+    } else if (el) {
+      el.classList.remove('done');
+    }
+  }
+}
+
+function setOAuthBusy(busy) {
+  const btn = document.getElementById('oauthBtn');
+  const txt = document.getElementById('oauthBtnTxt');
+  btn.disabled = busy;
+  txt.innerHTML = busy
+    ? '<div class="spin"></div> Aguardando autorização...'
+    : '🔵 Autorizar com Meta / Facebook';
+}
+
+function setTestBusy(busy) {
+  const btn = document.getElementById('testBtn');
+  const txt = document.getElementById('testBtnTxt');
+  btn.disabled = busy;
+  txt.innerHTML = busy
+    ? '<div class="spin"></div> Publicando...'
+    : '📤 Publicar no Instagram';
+}
+
+function showAlert(id, msg) {
+  const el = document.getElementById(id);
+  const msgId = id + 'Msg';
+  const msgEl = document.getElementById(msgId);
+  if (msgEl && msg) msgEl.textContent = msg;
+  el.classList.add('show');
+}
+
+function clearAlerts() {
+  ['testOk','testErr'].forEach(id => document.getElementById(id)?.classList.remove('show'));
+}
+
+function showResult(text, ok) {
+  const box = document.getElementById('resultBox');
+  box.textContent = text;
+  box.className = 'result-box show ' + (ok ? 'ok' : 'err');
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ══════════════════════════════════
+//  START
+// ══════════════════════════════════
+init();
+</script>
+</body>
+</html>
