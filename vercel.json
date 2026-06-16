@@ -1,14 +1,7 @@
 {
-  "version": 2,
-  "builds": [
-    { "src": "api/analyze.js", "use": "@vercel/node" },
-    { "src": "*.html", "use": "@vercel/static" }
-  ],
-  "routes": [
-    { "src": "/api/analyze", "dest": "/api/analyze.js" },
-    { "src": "/", "dest": "/index.html" },
-    { "src": "/login", "dest": "/snapost-auth-v3.html" },
-    { "src": "/precos", "dest": "/snapost-pricing.html" },
-    { "src": "/app", "dest": "/snapost-mvp.html" }
+  "rewrites": [
+    { "source": "/login", "destination": "/snapost-auth-v3.html" },
+    { "source": "/precos", "destination": "/snapost-pricing.html" },
+    { "source": "/app", "destination": "/snapost-mvp.html" }
   ]
 }
