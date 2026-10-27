@@ -68,4 +68,48 @@ Analise detalhadamente a foto deste produto e retorne ESTRITAMENTE um JSON sem m
     const rawText = claudeData.content?.find(b => b.type === 'text')?.text || '{}';
     const cleanJson = JSON.parse(rawText.replace(/```json|```/g, '').trim());
 
-    // 2. CADASTRA O PRODUT
+    // 2. CADASTRA O PRODUTO NO BLING ERP AUTOMATICAMENTE
+    let blingResultado = null;
+
+    if (blingKey) {
+      const p = cleanJson.produto;
+      const xmlProduto = `<?xml version="1.0" encoding="UTF-8"?>
+<produto>
+  <codigo>${p.sku}</codigo>
+  <descricao>${p.nome.replace(/&/g, '&amp;')}</descricao>
+  <situacao>Ativo</situacao>
+  <vlr_unit>${p.preco}</vlr_unit>
+  <preco_custo>${p.preco_custo}</preco_custo>
+  <descricaoCurta>${p.descricao.replace(/&/g, '&amp;')}</descricaoCurta>
+  <unidade>UN</unidade>
+  <origem>0</origem>
+</produto>`;
+
+      const blingUrl = `https://bling.com.br/Api/v2/produto/json/`;
+      const params = new URLSearchParams();
+      params.append('apikey', blingKey);
+      params.append('xml', xmlProduto);
+
+      const blingResp = await fetch(blingUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+      });
+
+      const blingData = await blingResp.json().catch(() => ({}));
+      blingResultado = blingData?.retorno?.produtos?.[0]?.produto || blingData?.retorno;
+    }
+
+    // 3. DEVOLVE TUDO PRONTO PARA O SEU CELULAR / APLICATIVO
+    return res.status(200).json({
+      sucesso: true,
+      produto_criado: cleanJson.produto,
+      status_bling: blingResultado ? 'Cadastrado no Bling com sucesso!' : 'Aguardando chave Bling',
+      redes_sociais: cleanJson.social
+    });
+
+  } catch (error) {
+    console.error('Erro geral:', error);
+    return res.status(500).json({ error: error.message || 'Erro ao processar integração' });
+  }
+}
